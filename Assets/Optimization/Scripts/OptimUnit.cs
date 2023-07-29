@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using UnityEngine.Profiling;
 using Random = UnityEngine.Random;
 
 public class OptimUnit : MonoBehaviour
@@ -27,9 +28,15 @@ public class OptimUnit : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Profiler.BeginSample("Handling Time"); // begin profiling a piece of code with a custom label
+
         HandleTime();
 
-        var t = transform;
+        Profiler.EndSample(); // ends the current profiling sample
+
+        Profiler.BeginSample("Rotating"); // begin profiling
+
+        /*var t = transform;
 
         if(transform.position.x <= 0)
             transform.Rotate(currentAngularVelocity * Time.deltaTime, 0, 0);
@@ -39,9 +46,22 @@ public class OptimUnit : MonoBehaviour
         if(transform.position.z >= 0)
             transform.Rotate(0,0, currentAngularVelocity * Time.deltaTime);
         else if(transform.position.z < 0)
-            transform.Rotate(0,0, -currentAngularVelocity * Time.deltaTime);
-        
+            transform.Rotate(0,0, -currentAngularVelocity * Time.deltaTime);*/
+
+        float rotationX = (transform.position.x <= 0) ? currentAngularVelocity : -currentAngularVelocity;
+        float rotationZ = (transform.position.z >= 0) ? currentAngularVelocity : -currentAngularVelocity;
+
+        transform.Rotate(rotationX * Time.deltaTime, 0, rotationZ * Time.deltaTime);
+
+        Profiler.EndSample(); // end profiling
+
+        Profiler.BeginSample("Moving"); // begin profiling
+
         Move();
+
+        Profiler.EndSample(); // end profiling
+
+        Profiler.BeginSample("Boundary Check"); // begin profiling
 
         //check if we are moving away from the zone and invert velocity if this is the case
         if (transform.position.x > areaSize.x && currentVelocity.x > 0)
@@ -65,6 +85,9 @@ public class OptimUnit : MonoBehaviour
             currentVelocity.z *= -1;
             PickNewVelocityChangeTime();
         }
+
+
+        Profiler.EndSample(); // end profiling
     }
 
 
@@ -92,19 +115,7 @@ public class OptimUnit : MonoBehaviour
 
     void Move()
     {
-        Vector3 position = transform.position;
-        
-        float distanceToCenter = Vector3.Distance(Vector3.zero, position);
-        float speed = 0.5f + distanceToCenter / areaSize.magnitude;
-        
-        int steps = Random.Range(1000, 2000);
-        float increment = Time.deltaTime / steps;
-        for (int i = 0; i < steps; ++i)
-        {
-            position += currentVelocity * increment * speed;
-        }
-        
-        transform.position = position;
+        transform.position = transform.position + currentVelocity * Time.deltaTime;
     }
 
     private void HandleTime()
